@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-trader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+
+    <!-- ================= SHOP ================= -->
+    <section id="shop" class="panel shop-panel hidden">
+        <header class="panel-header">
+            <button class="circle-btn" disabled aria-hidden="true">&#9878;</button>
+            <div class="titles">
+                <h1 id="shop-title" data-i18n="ui_trader">Trader</h1>
+                <div class="subtitle" id="shop-sub"></div>
+            </div>
+            <button class="circle-btn" data-close data-i18n-title="ui_close" title="Close">&#10005;</button>
+        </header>
+
+        <div class="tabs">
+            <button class="wood-btn tab" data-mode="buy" data-i18n="ui_buy">Buy</button>
+            <button class="wood-btn tab" data-mode="sell" data-i18n="ui_sell">Sell</button>
+        </div>
+        <div class="divider"><span>&#10022;</span></div>
+
+        <div class="list" id="shop-list"></div>
+    </section>
+
+    <!-- ================= ADMIN ================= -->
+    <section id="admin" class="panel admin-panel hidden">
+        <header class="panel-header">
+            <button class="circle-btn" id="admin-back" data-i18n-title="ui_back" title="Back">&#10094;</button>
+            <div class="titles">
+                <h1 id="admin-title" data-i18n="ui_admin_title">Trader Admin</h1>
+                <div class="subtitle" id="admin-sub" data-i18n="ui_admin_sub">Manage traders &amp; stock</div>
+            </div>
+            <button class="circle-btn" data-close data-i18n-title="ui_close" title="Close">&#10005;</button>
+        </header>
+
+        <!-- traders view -->
+        <div id="view-traders">
+            <div class="toolbar">
+                <input type="text" id="trader-search" class="input" data-i18n-ph="ui_search" placeholder="Search...">
+                <button class="wood-btn" id="btn-add-trader" data-i18n="ui_add_trader">Add Trader</button>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="list" id="trader-list"></div>
+        </div>
+
+        <!-- items view -->
+        <div id="view-items" class="hidden">
+            <div class="toolbar">
+                <input type="text" id="item-search" class="input" data-i18n-ph="ui_search" placeholder="Search...">
+                <button class="wood-btn" id="btn-add-item" data-i18n="ui_add_item">Add Item</button>
+            </div>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="list" id="item-list"></div>
+        </div>
+    </section>
+
+    <!-- ================= MODALS ================= -->
+    <div id="modal-backdrop" class="hidden">
+
+        <!-- trade quantity -->
+        <div class="modal hidden" id="modal-trade">
+            <h2 id="trade-title">Buy</h2>
+            <div class="ink-divider"></div>
+            <div class="trade-item">
+                <div class="badge"><img id="trade-img" alt="" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"></div>
+                <div>
+                    <div class="row-title" id="trade-label"></div>
+                    <div class="row-desc" id="trade-desc"></div>
+                </div>
+            </div>
+            <div class="stepper">
+                <button class="circle-btn" id="qty-minus">&minus;</button>
+                <input type="number" id="qty" class="input qty" min="1" value="1">
+                <button class="circle-btn" id="qty-plus">+</button>
+                <button class="wood-btn muted small" id="qty-max" data-i18n="ui_max">Max</button>
+            </div>
+            <div class="total-line"><span data-i18n="ui_total">Total</span><strong id="trade-total">$0.00</strong></div>
+            <div class="actions">
+                <button class="wood-btn muted" data-modal-cancel data-i18n="ui_cancel">Cancel</button>
+                <button class="wood-btn" id="trade-confirm" data-i18n="ui_confirm">Confirm</button>
+            </div>
+        </div>
+
+        <!-- trader form -->
+        <div class="modal hidden" id="modal-trader">
+            <h2 id="trader-form-title">Add Trader</h2>
+            <div class="ink-divider"></div>
+            <label class="field"><span data-i18n="ui_name">Trader name</span><input type="text" id="f-tradername" class="input" maxlength="50"></label>
+            <label class="field"><span data-i18n="ui_model">Ped model</span><input type="text" id="f-npcmodel" class="input" maxlength="60"></label>
+            <label class="check"><input type="checkbox" id="f-showblip" checked><span data-i18n="ui_blip">Show map blip</span></label>
+            <label class="check" id="f-movehere-wrap"><input type="checkbox" id="f-movehere"><span data-i18n="ui_move_here">Move trader to my position</span></label>
+            <p class="note" id="f-pos-note" data-i18n="ui_pos_note"></p>
+            <div class="actions">
+                <button class="wood-btn muted" data-modal-cancel data-i18n="ui_cancel">Cancel</button>
+                <button class="wood-btn" id="trader-save" data-i18n="ui_save">Save</button>
+            </div>
+        </div>
+
+        <!-- item form -->
+        <div class="modal wide hidden" id="modal-item">
+            <h2 id="item-form-title">Add Item</h2>
+            <div class="ink-divider"></div>
+            <input type="hidden" id="f-item">
+            <div class="field">
+                <span data-i18n="ui_item">Item</span>
+                <div class="picked" id="picked">
+                    <div class="badge"><img id="picked-img" alt="" onerror="this.style.visibility='hidden'"></div>
+                    <div class="row-main">
+                        <div class="row-title" id="picked-label"></div>
+                        <div class="row-desc" id="picked-name"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="picker-wrap">
+                <input type="text" id="f-item-search" class="input" data-i18n-ph="ui_search_items" placeholder="Search items...">
+                <div class="picker" id="item-picker"></div>
+                <div class="picker-count" id="picker-count"></div>
+            </div>
+            <div class="grid-2">
+                <label class="field"><span data-i18n="ui_stock">Stock</span><input type="number" id="f-stock" class="input" min="0" value="0"></label>
+                <label class="field"><span data-i18n="ui_baseprice">Base price</span><input type="number" id="f-baseprice" class="input" min="0.01" step="0.01"></label>
+                <label class="field"><span data-i18n="ui_lowstock">Low stock</span><input type="number" id="f-lowstock" class="input" min="0" value="10"></label>
+                <label class="field"><span data-i18n="ui_highstock">High stock</span><input type="number" id="f-highstock" class="input" min="1" value="100"></label>
+            </div>
+            <div class="actions">
+                <button class="wood-btn muted" data-modal-cancel data-i18n="ui_cancel">Cancel</button>
+                <button class="wood-btn" id="item-save" data-i18n="ui_save">Save</button>
+            </div>
+        </div>
+
+        <!-- confirm -->
+        <div class="modal hidden" id="modal-confirm">
+            <h2 data-i18n="ui_confirm">Confirm</h2>
+            <div class="ink-divider"></div>
+            <p class="confirm-text" id="confirm-text"></p>
+            <label class="check hidden" id="confirm-check-wrap"><input type="checkbox" id="confirm-check"><span id="confirm-check-label"></span></label>
+            <div class="actions">
+                <button class="wood-btn muted" data-modal-cancel data-i18n="ui_cancel">Cancel</button>
+                <button class="wood-btn danger" id="confirm-ok" data-i18n="ui_delete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
