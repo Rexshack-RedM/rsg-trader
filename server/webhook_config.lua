@@ -4,7 +4,7 @@
 ---------------------------------------------
 WebhookConfig = {}
 
-WebhookConfig.Enabled  = true
+WebhookConfig.Enabled  = false
 WebhookConfig.UseRsgLog = false -- also send logs to rsg-log (key 'rsgtrader')
 
 WebhookConfig.BotName  = 'RSG Trader'
