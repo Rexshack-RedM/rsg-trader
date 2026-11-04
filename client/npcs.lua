@@ -1,5 +1,16 @@
 local spawnedPeds = {}
 
+local function loadModel(model, timeout)
+    if not IsModelValid(model) then return false end
+    RequestModel(model, false)
+    local deadline = GetGameTimer() + (timeout or 5000)
+    while not HasModelLoaded(model) do
+        if GetGameTimer() > deadline then return false end
+        Wait(10)
+    end
+    return true
+end
+
 local function fade(ped, from, to, step)
     for i = from, to, step do
         if not DoesEntityExist(ped) then return end
@@ -10,8 +21,7 @@ end
 
 local function spawnPed(trader)
     local model = joaat(trader.npcmodel)
-    -- lib.requestModel throws on invalid/timed-out models, which would kill the spawn loop
-    if not IsModelValid(model) or not pcall(lib.requestModel, model, 5000) then
+    if not loadModel(model, 5000) then
         if Config.Debug then print(('[rsg-trader] invalid model %s for trader %s'):format(trader.npcmodel, trader.traderid)) end
         return
     end
@@ -26,7 +36,7 @@ local function spawnPed(trader)
     SetPedCanBeTargetted(ped, false)
     SetPedFleeAttributes(ped, 0, false)
 
-    exports.ox_target:addLocalEntity(ped, {
+    exports['rsg-target']:addLocalEntity(ped, {
         {
             name = 'rsg_trader_speak',
             icon = 'fa-solid fa-comments',
@@ -45,7 +55,7 @@ end
 
 local function despawnPed(ped)
     if not ped or not DoesEntityExist(ped) then return end
-    exports.ox_target:removeLocalEntity(ped, 'rsg_trader_speak')
+    exports['rsg-target']:removeLocalEntity(ped, 'rsg_trader_speak')
     if Config.FadeIn then
         CreateThread(function()
             fade(ped, 255, 0, -51)
@@ -63,7 +73,7 @@ end
 
 CreateThread(function()
     while true do
-        local playerCoords = GetEntityCoords(cache.ped)
+        local playerCoords = GetEntityCoords(PlayerPedId())
         local active = {}
 
         for _, t in ipairs(GetTraders()) do

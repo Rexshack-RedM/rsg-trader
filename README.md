@@ -3,20 +3,19 @@
 Dynamic-price NPC traders for **RSG-Core (RedM)**. Players buy and sell items at prices that move with stock levels. Admins place traders and manage stock in game through a built-in admin panel, with no config edits or restarts.
 
 ## Features
-- NPC traders spawn and despawn by distance, with optional fade-in and an ox_target "Speak with the Trader" option
+- NPC traders spawn and despawn by distance, with optional fade-in and an rsg-target "Speak with the Trader" option
 - Buy / Sell UI that shows stock bars, your cash, owned counts and live totals. Quantity is capped by stock, by what you carry and by what you can afford.
 - Dynamic pricing: low stock costs more, high stock costs less, and traders pay a configurable fraction of their sell price
 - `/traderadmin` panel to add, edit, move, teleport to and delete traders, and to add, edit and remove items using a searchable item picker
 - Map blips per trader (can be toggled)
 - Draggable panels; double-click a header to reset its position
 - Auto-creates and migrates the database tables (including a migration from the old `rex_trader` table)
-- ox_lib notifications and JSON locales
+- rsg-core notifications, callbacks and JSON locales (no ox_lib required)
 
 ## Dependencies
 - rsg-core
 - rsg-inventory
-- ox_lib
-- ox_target
+- rsg-target
 - oxmysql
 
 ## Installation
@@ -75,4 +74,4 @@ exports['rsg-trader']:SendWebhook('buy', source, 'Title', { { name = 'Field', va
 ```
 
 ## Locales
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player-facing string (notifications, NUI, target labels, commands) and the Discord webhook embeds come from `locales/*.json`. Set the language in server.cfg with `setr ox:locale de`. ox_lib falls back to `en` for any missing key.
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player-facing string (notifications, NUI, target labels, commands) and the Discord webhook embeds come from `locales/*.json`. Set the language in server.cfg with `setr rsg:locale de` (falls back to `ox:locale`, then `en`).

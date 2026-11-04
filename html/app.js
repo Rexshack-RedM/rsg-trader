@@ -33,7 +33,7 @@ function applyStrings() {
     document.querySelectorAll('[data-i18n-title]').forEach((el) => { if (S[el.dataset.i18nTitle]) el.title = S[el.dataset.i18nTitle]; });
 }
 
-// notifications are shown with ox_lib (lib.notify) by the client
+// notifications are shown with rsg-core notify by the client
 function toast(type, msg) {
     if (msg) post('notify', { type, msg });
 }

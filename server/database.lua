@@ -104,5 +104,7 @@ MySQL.ready(function()
         TriggerEvent('rsg-trader:server:databaseReady')
     else
         log('Database setup failed: ' .. tostring(err), '^1')
+        -- still try to load traders if the tables already exist
+        if tableExists('rsg_trader_npcs') then TriggerEvent('rsg-trader:server:databaseReady') end
     end
 end)

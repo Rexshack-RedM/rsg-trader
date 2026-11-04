@@ -1,5 +1,8 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+local function await(name, ...)
+    return RSGCore.Functions.AwaitCallback(name, 10000, ...)
+end
 
 local blips = {}
 local uiOpen = false
@@ -72,7 +75,7 @@ end
 
 local function notify(ntype, msg, title)
     if not msg or msg == '' then return end
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = title or locale('ui_trader'),
         description = msg,
         type = ntype == 'success' and 'success' or ntype == 'error' and 'error' or 'inform',
@@ -113,7 +116,7 @@ local function openShop(traderid, mode, msg)
     local trader = GetTrader(traderid)
     if not trader then return end
 
-    local stock = lib.callback.await('rsg-trader:server:traderdata', false, traderid) or {}
+    local stock = await('rsg-trader:server:traderdata', traderid) or {}
     local owned = ownedCounts()
     local items = {}
     for _, d in ipairs(stock) do
@@ -151,15 +154,19 @@ RegisterNUICallback('trade', function(data, cb)
     cb('ok')
     if trading then return end
     local amount = tonumber(data.amount)
-    if not amount or not RSGCore.Shared.Items[data.item] then return end
+    if not amount or type(data.item) ~= 'string' or not RSGCore.Shared.Items[data.item] then return end
 
     trading = true
-    local res = lib.callback.await(data.mode == 'buy' and 'rsg-trader:server:buy' or 'rsg-trader:server:sell', false, data.traderid, data.item, amount)
+    local res = await(data.mode == 'buy' and 'rsg-trader:server:buy' or 'rsg-trader:server:sell', data.traderid, data.item, amount)
     Wait(150) -- let inventory/money state update
     trading = false
 
     if res then playSound(res.ok and 'success' or 'fail') end
-    if uiOpen then openShop(data.traderid, data.mode, res) end
+    if uiOpen then
+        openShop(data.traderid, data.mode, res)
+    elseif res then
+        notify(res.ok and 'success' or 'error', res.msg)
+    end
 end)
 
 ---------------------------------------------
@@ -177,13 +184,13 @@ local function adminItemList()
 end
 
 local function sendTraders()
-    local traders = lib.callback.await('rsg-trader:server:admin:traders', false)
+    local traders = await('rsg-trader:server:admin:traders')
     SendNUIMessage({ action = 'adminTraders', traders = traders or {} })
 end
 
 RegisterNetEvent('rsg-trader:client:openAdmin', function()
-    if not lib.callback.await('rsg-trader:server:admin:isAdmin', false) then return end
-    local traders = lib.callback.await('rsg-trader:server:admin:traders', false) or {}
+    if not await('rsg-trader:server:admin:isAdmin') then return end
+    local traders = await('rsg-trader:server:admin:traders') or {}
     openUI({ action = 'openAdmin', traders = traders, itemList = adminItemList(), defaultModel = Config.DefaultModel, imagePath = 'nui://' .. Config.Image })
 end)
 
@@ -198,27 +205,27 @@ adminAction('admin:saveTrader', function(data)
     if data.npcmodel and data.npcmodel ~= '' and not IsModelValid(joaat(data.npcmodel)) then
         return { ok = false, msg = locale('sv_invalid_model') }
     end
-    local res = lib.callback.await('rsg-trader:server:admin:saveTrader', false, data)
+    local res = await('rsg-trader:server:admin:saveTrader', data)
     if res and res.ok then sendTraders() end
     return res
 end)
 
 adminAction('admin:deleteTrader', function(data)
-    local res = lib.callback.await('rsg-trader:server:admin:deleteTrader', false, data.traderid, data.removeItems)
+    local res = await('rsg-trader:server:admin:deleteTrader', data.traderid, data.removeItems)
     if res and res.ok then sendTraders() end
     return res
 end)
 
 adminAction('admin:items', function(data)
-    return { ok = true, items = lib.callback.await('rsg-trader:server:admin:items', false, data.traderid) or {} }
+    return { ok = true, items = await('rsg-trader:server:admin:items', data.traderid) or {} }
 end)
 
 adminAction('admin:saveItem', function(data)
-    return lib.callback.await('rsg-trader:server:admin:saveItem', false, data)
+    return await('rsg-trader:server:admin:saveItem', data)
 end)
 
 adminAction('admin:deleteItem', function(data)
-    return lib.callback.await('rsg-trader:server:admin:deleteItem', false, data.traderid, data.item)
+    return await('rsg-trader:server:admin:deleteItem', data.traderid, data.item)
 end)
 
 adminAction('admin:refresh', function()
@@ -230,11 +237,12 @@ adminAction('admin:teleport', function(data)
     local t = GetTrader(data.traderid)
     if not t then return { ok = false } end
     closeUI()
+    local ped = PlayerPedId()
     DoScreenFadeOut(300)
     Wait(300)
     local h = math.rad(t.heading)
-    SetEntityCoords(cache.ped, t.x - math.sin(h) * 1.5, t.y + math.cos(h) * 1.5, t.z, false, false, false, false)
-    SetEntityHeading(cache.ped, (t.heading + 180.0) % 360.0)
+    SetEntityCoords(ped, t.x - math.sin(h) * 1.5, t.y + math.cos(h) * 1.5, t.z, false, false, false, false)
+    SetEntityHeading(ped, (t.heading + 180.0) % 360.0)
     Wait(300)
     DoScreenFadeIn(300)
     return { ok = true }

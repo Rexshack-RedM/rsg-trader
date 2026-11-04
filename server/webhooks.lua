@@ -5,7 +5,6 @@
 ---------------------------------------------
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local cfg = WebhookConfig
-lib.locale()
 
 Webhook = {}
 
@@ -177,5 +176,5 @@ RSGCore.Commands.Add('traderwebhooktest', locale('sv_cmd_webhooktest'), {}, fals
     for event in pairs({ buy = true, trader_created = true, suspicious = true }) do
         Webhook.Send(event, source, locale('wh_title_test'), { { name = locale('wh_event'), value = event } }, locale('wh_test_desc'))
     end
-    TriggerClientEvent('ox_lib:notify', source, { title = locale('ui_trader'), description = locale('wh_test_queued'), type = 'inform', duration = 5000 })
+    TriggerClientEvent('RSGCore:Client:Notify', source, { title = locale('ui_trader'), description = locale('wh_test_queued'), type = 'inform', duration = 5000 })
 end, 'admin')

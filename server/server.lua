@@ -1,5 +1,11 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+-- rsg-core callback wrapper: handlers return their result instead of calling cb
+local function callback(name, fn)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...)
+        cb(fn(source, ...))
+    end)
+end
 
 local cooldowns = {}
 local Traders = {} -- traderid -> trader row (loaded from rsg_trader_npcs)
@@ -134,8 +140,8 @@ end
 ---------------------------------------------
 -- shop: trader stock with server-calculated prices
 ---------------------------------------------
-lib.callback.register('rsg-trader:server:traderdata', function(source, traderid)
-    if not Traders[traderid] then return {} end
+callback('rsg-trader:server:traderdata', function(source, traderid)
+    if type(traderid) ~= 'string' or not Traders[traderid] then return {} end
     local rows = MySQL.query.await('SELECT item, stock, lowstock, highstock, baseprice FROM rsg_trader WHERE traderid = ? ORDER BY item', { traderid }) or {}
     local list = {}
     for _, r in ipairs(rows) do
@@ -151,7 +157,7 @@ end)
 ---------------------------------------------
 -- shop: player buys from the trader
 ---------------------------------------------
-lib.callback.register('rsg-trader:server:buy', function(source, traderid, item, amount)
+callback('rsg-trader:server:buy', function(source, traderid, item, amount)
     local src = source
     local Player, trader, row, qty, itemData = validateTrade(src, traderid, item, amount, Config.MaxBuyAmount)
     if not Player then return result(false, trader) end
@@ -193,12 +199,13 @@ end)
 ---------------------------------------------
 -- shop: player sells to the trader
 ---------------------------------------------
-lib.callback.register('rsg-trader:server:sell', function(source, traderid, item, amount)
+callback('rsg-trader:server:sell', function(source, traderid, item, amount)
     local src = source
     local Player, trader, row, qty, itemData = validateTrade(src, traderid, item, amount, Config.MaxSellAmount)
     if not Player then return result(false, trader) end
 
     local total = round2(Config.GetSellPrice(row.stock, row.lowstock, row.highstock, row.baseprice) * qty)
+    if total <= 0 then return result(false, locale('sv_invalid_trade')) end
     if not exports['rsg-inventory']:RemoveItem(src, item, qty, nil, 'rsg-trader-sell') then
         return result(false, locale('sv_not_enough_items'))
     end
@@ -225,11 +232,11 @@ RSGCore.Commands.Add('traderadmin', locale('sv_cmd_admin'), {}, false, function(
     TriggerClientEvent('rsg-trader:client:openAdmin', source)
 end, 'admin')
 
-lib.callback.register('rsg-trader:server:admin:isAdmin', function(source)
+callback('rsg-trader:server:admin:isAdmin', function(source)
     return isAdmin(source)
 end)
 
-lib.callback.register('rsg-trader:server:admin:traders', function(source)
+callback('rsg-trader:server:admin:traders', function(source)
     if not isAdmin(source) then return nil end
     local counts = {}
     for _, r in ipairs(MySQL.query.await('SELECT traderid, COUNT(*) AS c FROM rsg_trader GROUP BY traderid') or {}) do
@@ -246,7 +253,7 @@ lib.callback.register('rsg-trader:server:admin:traders', function(source)
 end)
 
 -- create (no traderid) or update (traderid) a trader
-lib.callback.register('rsg-trader:server:admin:saveTrader', function(source, data)
+callback('rsg-trader:server:admin:saveTrader', function(source, data)
     local src = source
     if not isAdmin(src) then adminDenied(src, 'saveTrader'); return result(false, locale('sv_no_permission')) end
     if type(data) ~= 'table' then return result(false, locale('sv_invalid_trade')) end
@@ -258,6 +265,7 @@ lib.callback.register('rsg-trader:server:admin:saveTrader', function(source, dat
     model = (model and model ~= '') and model:lower() or Config.DefaultModel
     if #model > 60 or model:find('[^%w_]') then return result(false, locale('sv_invalid_model')) end
 
+    if data.traderid ~= nil and type(data.traderid) ~= 'string' then return result(false, locale('sv_invalid_trade')) end
     local existing = data.traderid and Traders[data.traderid]
     if data.traderid and not existing then return result(false, locale('sv_not_found')) end
 
@@ -292,14 +300,15 @@ lib.callback.register('rsg-trader:server:admin:saveTrader', function(source, dat
     return result(true, locale(existing and 'sv_trader_updated' or 'sv_trader_added', name))
 end)
 
-lib.callback.register('rsg-trader:server:admin:deleteTrader', function(source, traderid, removeItems)
+callback('rsg-trader:server:admin:deleteTrader', function(source, traderid, removeItems)
     local src = source
     if not isAdmin(src) then adminDenied(src, 'deleteTrader'); return result(false, locale('sv_no_permission')) end
-    local trader = Traders[traderid]
+    local trader = type(traderid) == 'string' and Traders[traderid]
     if not trader then return result(false, locale('sv_not_found')) end
+    removeItems = removeItems == true
 
     MySQL.query.await('DELETE FROM rsg_trader_npcs WHERE traderid = ?', { traderid })
-    if removeItems then
+    if removeItems == true then
         MySQL.query.await('DELETE FROM rsg_trader WHERE traderid = ?', { traderid })
     end
     Traders[traderid] = nil
@@ -311,13 +320,13 @@ lib.callback.register('rsg-trader:server:admin:deleteTrader', function(source, t
     return result(true, locale('sv_trader_removed', trader.tradername))
 end)
 
-lib.callback.register('rsg-trader:server:admin:items', function(source, traderid)
+callback('rsg-trader:server:admin:items', function(source, traderid)
     if not isAdmin(source) or not Traders[traderid] then return nil end
     return MySQL.query.await('SELECT item, stock, lowstock, highstock, baseprice FROM rsg_trader WHERE traderid = ? ORDER BY item', { traderid }) or {}
 end)
 
 -- add or update an item on a trader
-lib.callback.register('rsg-trader:server:admin:saveItem', function(source, data)
+callback('rsg-trader:server:admin:saveItem', function(source, data)
     local src = source
     if not isAdmin(src) then adminDenied(src, 'saveItem'); return result(false, locale('sv_no_permission')) end
     if type(data) ~= 'table' then return result(false, locale('sv_invalid_trade')) end
@@ -356,11 +365,12 @@ lib.callback.register('rsg-trader:server:admin:saveItem', function(source, data)
     return result(true, locale(data.isNew and 'sv_added' or 'sv_item_updated'))
 end)
 
-lib.callback.register('rsg-trader:server:admin:deleteItem', function(source, traderid, item)
+callback('rsg-trader:server:admin:deleteItem', function(source, traderid, item)
     local src = source
     if not isAdmin(src) then adminDenied(src, 'deleteItem'); return result(false, locale('sv_no_permission')) end
-    if not Traders[traderid] or type(item) ~= 'string' then return result(false, locale('sv_invalid_trade')) end
-    MySQL.query.await('DELETE FROM rsg_trader WHERE traderid = ? AND item = ?', { traderid, item })
+    if type(traderid) ~= 'string' or not Traders[traderid] or type(item) ~= 'string' then return result(false, locale('sv_invalid_trade')) end
+    local affected = MySQL.update.await('DELETE FROM rsg_trader WHERE traderid = ? AND item = ?', { traderid, item })
+    if not affected or affected < 1 then return result(false, locale('sv_not_found')) end
     log('item_removed', src, locale('wh_title_item_removed'), {
         { name = locale('wh_trader'), value = traderLabel(traderid) },
         { name = locale('wh_item'), value = ('`%s`'):format(item) },
