@@ -58,3 +58,85 @@ JSON files in `locales/` (en, de, el, es, fr, ja, nl, pl, pt-br, ro), loaded by 
 - Per-unit prices shown in the UI are rounded to cents, so a large order can differ from the shown unit price times the quantity by a few cents.
 - Skipped when rsg-economy is not started or the trader has no town within `Config.RegionRadius` of rsg-economy.
 
+<!-- BEGIN AUTO-REFERENCE (generated from the code; re-run the generator instead of editing by hand) -->
+
+## Technical reference
+
+Generated from the source of **rsg-trader 3.2.0**. Names, arguments and defaults below are read straight from the code.
+
+### Dependencies
+
+`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+
+### Database
+
+Tables: `rsg_trader`, `rsg_trader_npcs`.
+
+Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
+For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-trader.sql` once.
+
+```lua
+-- shared/config.lua
+Config.AutoDatabase = true -- false = import the SQL file yourself
+```
+
+### Configuration
+
+| Option | Default | Notes |
+|---|---|---|
+| `Config.Debug` | `false` |  |
+| `Config.AutoDatabase` | `true` | create/upgrade the database table on start (false = import installation/rsg-trader.sql manually) |
+| `Config.Image` | `'rsg-inventory/html/images/'` | location of item images |
+| `Config.MaxBuyAmount` | `10` | max items per buy transaction |
+| `Config.MaxSellAmount` | `10` | max items per sell transaction |
+| `Config.InteractDistance` | `5.0` | server-side max distance (m) from the trader to buy/sell |
+| `Config.Cooldown` | `2000` | server-side cooldown (ms) between transactions per player |
+| `Config.Sounds` | `table` |  |
+| `Config.DistanceSpawn` | `20.0` |  |
+| `Config.FadeIn` | `true` |  |
+| `Config.Pricing` | `table` |  |
+| `Config.DefaultModel` | `'mp_u_m_m_trader_01'` |  |
+| `Config.DefaultBlip` | `{ sprite = 'blip_shop_market_stall', scale = 0.2 }` |  |
+| `Config.DefaultTraders` | `table` |  |
+| `Config.DefaultItems` | `table` |  |
+| `Config.Economy` | `table` | The town is the one nearest to the trader (rsg-economy GetRegionAt). A trader too far from every town is untou |
+| `Config.Enabled` | `true` |  |
+
+### Exports
+
+**Server**
+
+| Export | Arguments | File |
+|---|---|---|
+| `SendWebhook` | `` | `server/webhooks.lua` |
+
+```lua
+-- example
+local result = exports['rsg-trader']:SendWebhook()
+```
+
+### Events
+
+Server events can be fired by any client, so every handler re-validates the player, the arguments and any permission, distance or cooldown on the server. Never add a reward to a handler without those checks.
+
+| Event | Side | Arguments | File |
+|---|---|---|---|
+| `rsg-trader:client:openAdmin` | client | `` | `client/client.lua` |
+
+```lua
+-- from a server script
+TriggerClientEvent('rsg-trader:client:openAdmin', source)
+```
+
+### Commands
+
+| Command | Notes | File |
+|---|---|---|
+| `/traderadmin` | locale('sv_cmd_admin') | `server/server.lua` |
+| `/traderwebhooktest` | locale('sv_cmd_webhooktest') | `server/webhooks.lua` |
+
+### Locales
+
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+
+<!-- END AUTO-REFERENCE -->
