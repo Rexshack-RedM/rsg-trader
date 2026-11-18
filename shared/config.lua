@@ -91,3 +91,11 @@ end
 function Config.GetSellPrice(stock, lowstock, highstock, basePrice)
     return round2(Config.GetBuyPrice(stock, lowstock, highstock, basePrice) * Config.Pricing.sellFactor)
 end
+
+-- rsg-economy integration (optional). Needs the rsg-economy resource; does nothing when it is not started.
+-- The trader's own stock-based pricing stays; rsg-economy adds the town's sales tax (buying) or trade tax (selling)
+-- and the player's reputation price modifier on top, and banks the tax in the town treasury.
+-- The town is the one nearest to the trader (rsg-economy GetRegionAt). A trader too far from every town is untouched.
+Config.Economy = {
+    Enabled = true,
+}

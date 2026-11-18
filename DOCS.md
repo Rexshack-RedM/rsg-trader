@@ -49,3 +49,12 @@ All callbacks return `{ ok = bool, msg = string }` for actions.
 
 ## Locales
 JSON files in `locales/` (en, de, el, es, fr, ja, nl, pl, pt-br, ro), loaded by `@rsg-core/shared/locale.lua`. Set language with `setr rsg:locale <lang>`.
+
+## rsg-economy integration
+
+`Config.Economy = { Enabled }`. `econQuote(src, trader, mode, unitPrice, qty)` finds the region with `exports['rsg-economy']:GetRegionAt(trader position)` and calls `Quote` with `market = false`.
+- `rsg-trader:server:traderdata` replaces `buyprice` and `sellprice` with the quote's per-unit `total`, so the UI shows the taxed price.
+- `rsg-trader:server:buy` / `sell` use `quote.total` as the amount charged or paid (server computed, never from the client). After the money and items have moved, `Record(src, quote)` banks the tax in the treasury.
+- Per-unit prices shown in the UI are rounded to cents, so a large order can differ from the shown unit price times the quantity by a few cents.
+- Skipped when rsg-economy is not started or the trader has no town within `Config.RegionRadius` of rsg-economy.
+

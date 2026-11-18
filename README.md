@@ -75,3 +75,8 @@ exports['rsg-trader']:SendWebhook('buy', source, 'Title', { { name = 'Field', va
 
 ## Locales
 Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player-facing string (notifications, NUI, target labels, commands) and the Discord webhook embeds come from `locales/*.json`. Set the language in server.cfg with `setr rsg:locale de` (falls back to `ox:locale`, then `en`).
+
+## rsg-economy integration
+
+Optional. With `rsg-economy` started, trades at a trader are taxed by the nearest town: buying adds that town's sales tax, selling takes its trade tax, and the player's reputation price modifier (rsg-reputation) applies. The tax goes into the town treasury. The prices shown in the shop already include this. The trader's own stock-based pricing is unchanged, and rsg-economy's market multiplier is not used. A trader further than the region radius from every town is untouched. Set `Config.Economy.Enabled = false` to turn it off.
+

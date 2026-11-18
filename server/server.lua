@@ -71,6 +71,14 @@ local function isNearTrader(src, trader)
     return #(GetEntityCoords(ped) - vector3(trader.x, trader.y, trader.z)) <= Config.InteractDistance
 end
 
+-- rsg-economy (optional): quote a price with the town's tax and reputation modifier (no market multiplier, the trader has its own stock pricing)
+local function econQuote(src, trader, mode, unitPrice, qty)
+    if not Config.Economy.Enabled or GetResourceState('rsg-economy') ~= 'started' then return nil end
+    local region = exports['rsg-economy']:GetRegionAt(vector3(trader.x, trader.y, trader.z))
+    if not region then return nil end
+    return exports['rsg-economy']:Quote(src, { region = region, mode = mode, base = unitPrice, qty = qty, market = false })
+end
+
 local function onCooldown(src)
     local now = GetGameTimer()
     if cooldowns[src] and now - cooldowns[src] < Config.Cooldown then return true end
@@ -142,12 +150,18 @@ end
 ---------------------------------------------
 callback('rsg-trader:server:traderdata', function(source, traderid)
     if type(traderid) ~= 'string' or not Traders[traderid] then return {} end
+    local trader = Traders[traderid]
     local rows = MySQL.query.await('SELECT item, stock, lowstock, highstock, baseprice FROM rsg_trader WHERE traderid = ? ORDER BY item', { traderid }) or {}
     local list = {}
     for _, r in ipairs(rows) do
         if RSGCore.Shared.Items[r.item] then
             r.buyprice  = Config.GetBuyPrice(r.stock, r.lowstock, r.highstock, r.baseprice)
             r.sellprice = Config.GetSellPrice(r.stock, r.lowstock, r.highstock, r.baseprice)
+            -- rsg-economy: show the price the player will really pay or get (tax and reputation included)
+            local qb = econQuote(source, trader, 'buy', r.buyprice, 1)
+            if qb then r.buyprice = round2(qb.total) end
+            local qs = econQuote(source, trader, 'sell', r.sellprice, 1)
+            if qs then r.sellprice = round2(qs.total) end
             list[#list + 1] = r
         end
     end
@@ -165,6 +179,8 @@ callback('rsg-trader:server:buy', function(source, traderid, item, amount)
     if row.stock < qty then return result(false, locale('sv_not_enough_stock', row.stock)) end
 
     local total = round2(Config.GetBuyPrice(row.stock, row.lowstock, row.highstock, row.baseprice) * qty)
+    local quote = econQuote(src, trader, 'buy', Config.GetBuyPrice(row.stock, row.lowstock, row.highstock, row.baseprice), qty)
+    if quote then total = round2(quote.total) end
     if Player.Functions.GetMoney('cash') < total then return result(false, locale('sv_not_enough_money')) end
     if not exports['rsg-inventory']:CanAddItem(src, item, qty) then return result(false, locale('sv_inventory_full')) end
 
@@ -184,6 +200,7 @@ callback('rsg-trader:server:buy', function(source, traderid, item, amount)
         return result(false, locale('sv_inventory_full'))
     end
     TriggerClientEvent('rsg-inventory:client:ItemBox', src, itemData, 'add', qty)
+    if quote then exports['rsg-economy']:Record(src, quote) end -- the money has moved: bank the tax
     log('buy', src, locale('wh_title_buy'), {
         { name = locale('wh_trader'), value = traderLabel(traderid) },
         { name = locale('wh_item'), value = ('%dx %s (`%s`)'):format(qty, itemData.label, item) },
@@ -205,12 +222,15 @@ callback('rsg-trader:server:sell', function(source, traderid, item, amount)
     if not Player then return result(false, trader) end
 
     local total = round2(Config.GetSellPrice(row.stock, row.lowstock, row.highstock, row.baseprice) * qty)
+    local quote = econQuote(src, trader, 'sell', Config.GetSellPrice(row.stock, row.lowstock, row.highstock, row.baseprice), qty)
+    if quote then total = round2(quote.total) end
     if total <= 0 then return result(false, locale('sv_invalid_trade')) end
     if not exports['rsg-inventory']:RemoveItem(src, item, qty, nil, 'rsg-trader-sell') then
         return result(false, locale('sv_not_enough_items'))
     end
 
     Player.Functions.AddMoney('cash', total, 'rsg-trader-sell')
+    if quote then exports['rsg-economy']:Record(src, quote) end -- the money has moved: bank the tax
     MySQL.update.await('UPDATE rsg_trader SET stock = stock + ? WHERE traderid = ? AND item = ?', { qty, traderid, item })
     TriggerClientEvent('rsg-inventory:client:ItemBox', src, itemData, 'remove', qty)
     log('sell', src, locale('wh_title_sell'), {
