@@ -74,7 +74,7 @@ exports['rsg-trader']:SendWebhook('buy', source, 'Title', { { name = 'Field', va
 ```
 
 ## Locales
-Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Every player-facing string (notifications, NUI, target labels, commands) and the Discord webhook embeds come from `locales/*.json`. Set the language in server.cfg with `setr rsg:locale de` (falls back to `ox:locale`, then `en`).
+Included: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Every player-facing string (notifications, NUI, target labels, commands) and the Discord webhook embeds come from `locales/*.json`. Set the language in server.cfg with `setr rsg:locale de` (falls back to `ox:locale`, then `en`).
 
 ## rsg-economy integration
 

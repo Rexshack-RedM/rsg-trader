@@ -48,7 +48,7 @@ All callbacks return `{ ok = bool, msg = string }` for actions.
 - Server: `exports['rsg-trader']:SendWebhook(event, src, title, fields, description)`
 
 ## Locales
-JSON files in `locales/` (en, de, el, es, fr, ja, nl, pl, pt-br, ro), loaded by `@rsg-core/shared/locale.lua`. Set language with `setr rsg:locale <lang>`.
+JSON files in `locales/` (en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru), loaded by `@rsg-core/shared/locale.lua`. Set language with `setr rsg:locale <lang>`.
 
 ## rsg-economy integration
 
@@ -137,6 +137,6 @@ TriggerClientEvent('rsg-trader:client:openAdmin', source)
 
 ### Locales
 
-Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`. Set the language with `setr rsg:locale "en"`.
+Language files in `locales/`: `de`, `el`, `en`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`, `ru`. Set the language with `setr rsg:locale "en"`.
 
 <!-- END AUTO-REFERENCE -->
